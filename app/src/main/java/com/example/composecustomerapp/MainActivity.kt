@@ -658,6 +658,7 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("register")
                             },
                             onLoginSuccess = {
+                                println("AuthDebug: onLoginSuccess triggered in MainActivity")
                                 homeViewModel.setAuthenticated(true)
                                 navController.navigate("home") {
                                     popUpTo("home") { inclusive = true }

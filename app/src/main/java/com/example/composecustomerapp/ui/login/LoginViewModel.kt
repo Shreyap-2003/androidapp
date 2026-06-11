@@ -45,16 +45,22 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
 
     fun signIn(onSuccess: () -> Unit) {
         val currentState = _uiState.value
-        if (!currentState.canSignIn) return
+        if (!currentState.canSignIn) {
+            println("AuthDebug: UI Validation failed - Phone: ${currentState.phoneNumber.length}")
+            return
+        }
 
         viewModelScope.launch {
+            println("AuthDebug: signIn() launching coroutine")
             _uiState.update { it.copy(isLoading = true, error = null) }
             val result = repository.login(currentState.phoneNumber, currentState.password)
             
             result.onSuccess {
+                println("AuthDebug: signIn() success")
                 _uiState.update { it.copy(isLoading = false, loginSuccess = true) }
                 onSuccess()
             }.onFailure { exception ->
+                println("AuthDebug: signIn() failure: ${exception.message}")
                 _uiState.update { it.copy(isLoading = false, error = exception.message) }
             }
         }
