@@ -1,7 +1,6 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.compose.foundation.background
-//import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,7 +33,7 @@ import com.example.composecustomerapp.ui.components.BlingYellow
 
 @Composable
 fun OrdersScreen(
-    viewModel: OrdersViewModel = viewModel(),
+    viewModel: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory),
     homeViewModel: HomeViewModel = viewModel(),
     onNavigateHome: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
@@ -63,7 +63,8 @@ fun OrdersScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = homeUiState.cartTotalItems.let { onNavigateToCart },
-                    onOrdersClick = {}
+                    onOrdersClick = {},
+                    onProfileClick = onNavigateToProfile
                 )
             }
         }
@@ -101,29 +102,35 @@ fun OrdersScreen(
                 )
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                val orders = if (uiState.selectedTab == OrderTab.ACTIVE) uiState.activeOrders else uiState.completedOrders
-                
-                items(orders) { order ->
-                    OrderCard(
-                        order = order, 
-                        isCompleted = uiState.selectedTab == OrderTab.COMPLETED,
-                        onClick = { onNavigateToOrderDetail(order.id) }
-                    )
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = BlingYellow)
                 }
-
-                if (uiState.selectedTab == OrderTab.ACTIVE) {
-                    item {
-                        CravingMoreCard(onShopNow = onNavigateHome)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    val orders = if (uiState.selectedTab == OrderTab.ACTIVE) uiState.activeOrders else uiState.completedOrders
+                    
+                    items(orders) { order ->
+                        OrderCard(
+                            order = order, 
+                            isCompleted = uiState.selectedTab == OrderTab.COMPLETED,
+                            onClick = { onNavigateToOrderDetail(order.id) }
+                        )
                     }
-                }
-                
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
+
+                    if (uiState.selectedTab == OrderTab.ACTIVE) {
+                        item {
+                            CravingMoreCard(onShopNow = onNavigateHome)
+                        }
+                    }
+                    
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
                 }
             }
         }
@@ -204,6 +211,20 @@ fun OrderCard(order: Order, isCompleted: Boolean, onClick: () -> Unit = {}) {
                         color = Color.Black
                     )
                     
+                    // Show partner info for ASSIGNED orders
+                    if (order.status == "ASSIGNED" && order.partnerName != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${order.partnerName}${if (order.partnerPhone != null) " (${order.partnerPhone})" else ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -252,16 +273,14 @@ fun OrderCard(order: Order, isCompleted: Boolean, onClick: () -> Unit = {}) {
 @Composable
 fun StatusBadge(status: String) {
     val containerColor = when (status) {
-        "IN_PROGRESS", "IN PROGRESS" -> Color(0xFFFFF9C4)
+        "ASSIGNED", "IN_PROGRESS", "IN PROGRESS" -> Color(0xFFFFF9C4)
         "COMPLETED" -> Color(0xFFE6F4EA)
-        "FAILED" -> Color(0xFFFFEBEE)
         "OPEN" -> Color(0xFFE3F2FD)
         else -> Color(0xFFE5E7EB)
     }
     val contentColor = when (status) {
-        "IN_PROGRESS", "IN PROGRESS" -> Color(0xFF854D0E)
+        "ASSIGNED", "IN_PROGRESS", "IN PROGRESS" -> Color(0xFF854D0E)
         "COMPLETED" -> Color(0xFF065F46)
-        "FAILED" -> Color(0xFFB71C1C)
         "OPEN" -> Color(0xFF0D47A1)
         else -> Color.Black
     }

@@ -14,8 +14,8 @@ data class OrderRequest(
 data class OrderResponse(
     val id: Int? = null,
     val customerId: Int? = null,
-    val itemId: Int? = null,
     val partnerId: Int? = null,
     val orderStatus: String? = null,
+    val itemId: Int? = null,
     val createdTime: String? = null
 )

@@ -1,10 +1,20 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.local.TokenManager
+import com.example.composecustomerapp.data.repository.ItemRepository
+import com.example.composecustomerapp.data.repository.OrderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class OrdersUiState(
     val activeOrders: List<Order> = emptyList(),
@@ -17,7 +27,11 @@ enum class OrderTab {
     ACTIVE, COMPLETED
 }
 
-class OrdersViewModel : ViewModel() {
+class OrdersViewModel(
+    private val orderRepository: OrderRepository,
+    private val itemRepository: ItemRepository,
+    private val tokenManager: TokenManager
+) : ViewModel() {
     private val _uiState = MutableStateFlow(OrdersUiState())
     val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
 
@@ -25,63 +39,80 @@ class OrdersViewModel : ViewModel() {
         loadOrders()
     }
 
-    private fun loadOrders() {
-        _uiState.update { 
-            it.copy(
-                activeOrders = listOf(
-                    Order(
-                        "65",
-                        "65",
-                        "Hide & Seek Chocochip Cookies",
-                        30,
-                        "IN_PROGRESS",
-                        "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=200",
-                        "June 8, 2026"
-                    ),
-                    Order(
-                        "66",
-                        "66",
-                        "Unibic Fruit & Nut Cookies",
-                        70,
-                        "IN_PROGRESS",
-                        "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=200",
-                        "June 8, 2026"
+    fun loadOrders() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val userIdStr = tokenManager.userId.first()
+            val userId = userIdStr?.toIntOrNull()
+            
+            if (userId == null) {
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            // Fetch items first to map names/images
+            val itemsResult = itemRepository.getItems()
+            val allItems = itemsResult.getOrDefault(emptyList())
+
+            val ordersResult = orderRepository.getOrders()
+            ordersResult.onSuccess { orderResponses ->
+                val orders = orderResponses
+                    .filter { it.customerId == userId }
+                    .map { resp ->
+                        val item = allItems.find { it.id == resp.itemId }
+                        
+                        var partnerName: String? = null
+                        var partnerPhone: String? = null
+                        
+                        // Requirement: if IN_PROGRESS, show as ASSIGNED and fetch partner details
+                        if (resp.orderStatus == "IN_PROGRESS" && resp.partnerId != null) {
+                            val partnerResult = orderRepository.getPartnerDetails(resp.partnerId)
+                            partnerResult.onSuccess { partner ->
+                                partnerName = partner?.name
+                                partnerPhone = partner?.phoneNumber
+                            }
+                        }
+
+                        Order(
+                            id = resp.id.toString(),
+                            orderNumber = resp.id.toString(),
+                            name = item?.name ?: "Item #${resp.itemId}",
+                            price = item?.price?.toInt() ?: 0,
+                            status = if (resp.orderStatus == "IN_PROGRESS") "ASSIGNED" else resp.orderStatus ?: "OPEN",
+                            imageUrl = item?.imageUrl ?: "",
+                            date = resp.createdTime?.take(10) ?: "",
+                            partnerName = partnerName,
+                            partnerPhone = partnerPhone
+                        )
+                    }
+                
+                _uiState.update { 
+                    it.copy(
+                        activeOrders = orders.filter { o -> o.status != "COMPLETED" },
+                        completedOrders = orders.filter { o -> o.status == "COMPLETED" },
+                        isLoading = false
                     )
-                ),
-                completedOrders = listOf(
-                    Order(
-                        "56",
-                        "56",
-                        "Milk",
-                        27,
-                        "COMPLETED",
-                        "https://images.unsplash.com/photo-1550583724-125581fe2f8a?auto=format&fit=crop&q=80&w=200",
-                        "29 May 2026"
-                    ),
-                    Order(
-                        "57",
-                        "57",
-                        "Milk",
-                        27,
-                        "COMPLETED",
-                        "https://images.unsplash.com/photo-1550583724-125581fe2f8a?auto=format&fit=crop&q=80&w=200",
-                        "29 May 2026"
-                    ),
-                    Order(
-                        "58",
-                        "58",
-                        "Coca-Cola",
-                        39,
-                        "COMPLETED",
-                        "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=200",
-                        "29 May 2026"
-                    )
-                )
-            )
+                }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
         }
     }
 
     fun setSelectedTab(tab: OrderTab) {
         _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                OrdersViewModel(
+                    application.orderRepository,
+                    application.itemRepository,
+                    application.tokenManager
+                )
+            }
+        }
     }
 }
