@@ -15,6 +15,7 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
         val request = chain.request().newBuilder()
         token?.let {
             request.addHeader("x-auth", it)
+            request.addHeader("X-Auth-Token", it)
         }
 
         return chain.proceed(request.build())
