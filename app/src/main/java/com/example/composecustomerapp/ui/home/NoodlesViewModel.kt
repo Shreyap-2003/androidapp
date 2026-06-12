@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class NoodlesUiState(
@@ -11,38 +19,42 @@ data class NoodlesUiState(
     val isLoading: Boolean = false
 )
 
-class NoodlesViewModel : ViewModel() {
+class NoodlesViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(NoodlesUiState())
     val uiState: StateFlow<NoodlesUiState> = _uiState.asStateFlow()
 
     init {
-        loadNoodlesData()
+        fetchProducts()
     }
 
-    private fun loadNoodlesData() {
-        _uiState.value = NoodlesUiState(
-            products = listOf(
-                Product(
-                    id = "n1",
-                    name = "Maggie Masala...",
-                    price = 56,
-                    imageUrl = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&q=80&w=400",
-                    tag = "FAST"
-                ),
-                Product(
-                    id = "n2",
-                    name = "Yippee Instant...",
-                    price = 52,
-                    imageUrl = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&q=80&w=400" // Placeholder
-                ),
-                Product(
-                    id = "n3",
-                    name = "Korean Ramen",
-                    price = 44,
-                    imageUrl = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&q=80&w=400", // Placeholder
-                    tag = "HOT"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val noodlesProducts = itemResponses
+                    .filter { it.subCategoryId == 16 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = noodlesProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                NoodlesViewModel(application.itemRepository)
+            }
+        }
     }
 }

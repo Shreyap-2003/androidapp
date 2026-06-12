@@ -67,8 +67,7 @@ fun OrderDetailScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = { /* Already here */ },
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = { /* Already here */ }
                 )
             }
         }

@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class SoftDrinksUiState(
@@ -11,39 +19,42 @@ data class SoftDrinksUiState(
     val isLoading: Boolean = false
 )
 
-class SoftDrinksViewModel : ViewModel() {
+class SoftDrinksViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(SoftDrinksUiState())
     val uiState: StateFlow<SoftDrinksUiState> = _uiState.asStateFlow()
 
     init {
-        loadSoftDrinksData()
+        fetchProducts()
     }
 
-    private fun loadSoftDrinksData() {
-        _uiState.value = SoftDrinksUiState(
-            products = listOf(
-                Product(
-                    id = "sd1",
-                    name = "Coca-Cola",
-                    price = 39,
-                    imageUrl = "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=400",
-                    unit = "250 ml"
-                ),
-                Product(
-                    id = "sd2",
-                    name = "Sprite",
-                    price = 35,
-                    imageUrl = "https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&q=80&w=400",
-                    unit = "250 ml"
-                ),
-                Product(
-                    id = "sd3",
-                    name = "Fanta",
-                    price = 38,
-                    imageUrl = "https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&q=80&w=400", // Using a placeholder for Fanta
-                    unit = "250 ml"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val softDrinksProducts = itemResponses
+                    .filter { it.subCategoryId == 10 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = softDrinksProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                SoftDrinksViewModel(application.itemRepository)
+            }
+        }
     }
 }

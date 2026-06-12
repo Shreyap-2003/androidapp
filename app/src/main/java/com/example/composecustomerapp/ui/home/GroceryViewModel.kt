@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.CategoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.SubCategory
 
 data class GroceryUiState(
@@ -12,34 +20,52 @@ data class GroceryUiState(
     val isLoading: Boolean = false
 )
 
-class GroceryViewModel : ViewModel() {
+class GroceryViewModel(private val categoryRepository: CategoryRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(GroceryUiState())
     val uiState: StateFlow<GroceryUiState> = _uiState.asStateFlow()
 
     init {
-        loadGroceryData()
+        fetchSubCategories()
     }
 
-    private fun loadGroceryData() {
-        _uiState.value = GroceryUiState(
-            subCategories = listOf(
-                SubCategory(
-                    "Dairy Products",
-                    "Fresh from local farms delivered daily",
-                    "https://images.unsplash.com/photo-1550583724-125581fe2f8a?auto=format&fit=crop&q=80&w=600"
-                ),
-                SubCategory(
-                    "Vegetables",
-                    "Organic & pesticide-free selection",
-                    "https://images.unsplash.com/photo-1566385101042-1a010ce1d07c?auto=format&fit=crop&q=80&w=600"
-                ),
-                SubCategory(
-                    "Fruits",
-                    "Sweet, juicy and seasonally picked",
-                    "https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&q=80&w=600"
-                )
-            ),
-            exploreMore = listOf("Organic Produce", "Exotic Fruits", "Leafy Greens", "Root Vegetables")
-        )
+    private fun fetchSubCategories() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = categoryRepository.getSubCategories()
+            result.onSuccess { subCategoryResponses ->
+                val grocerySubCategories = subCategoryResponses
+                    .filter { it.categoryId == 15 }
+                    .map {
+                        val fullImageUrl = if (it.imageUrl.startsWith("http")) {
+                            it.imageUrl
+                        } else {
+                            "http://10.200.24.230:8080/${it.imageUrl}"
+                        }
+                        SubCategory(
+                            title = it.name,
+                            description = it.description,
+                            imageUrl = fullImageUrl
+                        )
+                    }
+                _uiState.update { 
+                    it.copy(
+                        subCategories = grocerySubCategories, 
+                        isLoading = false,
+                        exploreMore = listOf("Organic Produce", "Exotic Fruits", "Leafy Greens", "Root Vegetables")
+                    ) 
+                }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                GroceryViewModel(application.categoryRepository)
+            }
+        }
     }
 }

@@ -91,6 +91,8 @@ fun BlingTextField(
         trailingIcon = trailingIcon,
         shape = RoundedCornerShape(12.dp),
         colors = TextFieldDefaults.colors(
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
             focusedContainerColor = LightGrayBackground,
             unfocusedContainerColor = LightGrayBackground,
             disabledContainerColor = LightGrayBackground,
@@ -110,8 +112,7 @@ fun BlingBottomNavigation(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit = {},
     onCartClick: () -> Unit,
-    onOrdersClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onOrdersClick: () -> Unit
 ) {
     NavigationBar(
         containerColor = Color.White,
@@ -159,34 +160,6 @@ fun BlingBottomNavigation(
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 indicatorColor = BlingYellow
-            )
-        )
-
-        // Profile Item with consistent circular icon style
-        NavigationBarItem(
-            selected = currentRoute == "profile",
-            onClick = onProfileClick,
-            icon = {
-                Surface(
-                    modifier = Modifier.size(32.dp),
-                    shape = CircleShape,
-                    color = if (currentRoute == "profile") BlingYellow else Color.Black.copy(alpha = 0.1f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            modifier = Modifier.size(20.dp),
-                            tint = if (currentRoute == "profile") Color.Black else Color.Gray
-                        )
-                    }
-                }
-            },
-            label = { Text("Profile") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedTextColor = Color.Black,
-                unselectedTextColor = Color.Gray,
-                indicatorColor = Color.Transparent
             )
         )
     }

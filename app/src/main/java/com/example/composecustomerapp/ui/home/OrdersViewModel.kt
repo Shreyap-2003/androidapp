@@ -34,7 +34,7 @@ class OrdersViewModel : ViewModel() {
                         "65",
                         "Hide & Seek Chocochip Cookies",
                         30,
-                        "IN PROGRESS",
+                        "IN_PROGRESS",
                         "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=200",
                         "June 8, 2026"
                     ),
@@ -43,7 +43,7 @@ class OrdersViewModel : ViewModel() {
                         "66",
                         "Unibic Fruit & Nut Cookies",
                         70,
-                        "IN PROGRESS",
+                        "IN_PROGRESS",
                         "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=200",
                         "June 8, 2026"
                     )

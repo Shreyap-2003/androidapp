@@ -59,8 +59,7 @@ fun SearchScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = {},
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }

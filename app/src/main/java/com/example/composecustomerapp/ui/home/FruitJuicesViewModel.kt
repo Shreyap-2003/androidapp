@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class FruitJuicesUiState(
@@ -11,36 +19,42 @@ data class FruitJuicesUiState(
     val isLoading: Boolean = false
 )
 
-class FruitJuicesViewModel : ViewModel() {
+class FruitJuicesViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(FruitJuicesUiState())
     val uiState: StateFlow<FruitJuicesUiState> = _uiState.asStateFlow()
 
     init {
-        loadJuicesData()
+        fetchProducts()
     }
 
-    private fun loadJuicesData() {
-        _uiState.value = FruitJuicesUiState(
-            products = listOf(
-                Product(
-                    id = "fj1",
-                    name = "Maaza Mango fruit Juice",
-                    price = 34,
-                    imageUrl = "https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    id = "fj2",
-                    name = "Paper Boat Mixed berries Juice",
-                    price = 40,
-                    imageUrl = "https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    id = "fj3",
-                    name = "B Natural Guava Juice",
-                    price = 48,
-                    imageUrl = "https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&q=80&w=400"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val fruitJuicesProducts = itemResponses
+                    .filter { it.subCategoryId == 11 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = fruitJuicesProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                FruitJuicesViewModel(application.itemRepository)
+            }
+        }
     }
 }

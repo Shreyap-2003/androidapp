@@ -30,8 +30,8 @@ import com.example.composecustomerapp.ui.components.ProductCard
 
 @Composable
 fun FruitJuicesScreen(
-    viewModel: FruitJuicesViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
+    viewModel: FruitJuicesViewModel = viewModel(factory = FruitJuicesViewModel.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
     onNavigateToLogin: () -> Unit = {},
     onNavigateHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -61,84 +61,89 @@ fun FruitJuicesScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }
     ) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Centered Title Header
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Fruit Juices",
-                            modifier = Modifier.align(Alignment.Center),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.Black
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.Black)
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(Color(0xFFF9FAFB)),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Centered Title Header
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "Fruit Juices",
+                                modifier = Modifier.align(Alignment.Center),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.Black
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(40.dp)
+                                .height(3.dp)
+                                .background(BlingYellow, RoundedCornerShape(2.dp))
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(40.dp)
-                            .height(3.dp)
-                            .background(BlingYellow, RoundedCornerShape(2.dp))
+                }
+
+                // Products Grid
+                items(uiState.products) { product ->
+                    val quantity = homeUiState.cartItems[product.id] ?: 0
+                    ProductCard(
+                        product = product,
+                        quantity = quantity,
+                        onIncrement = { homeViewModel.updateCart(product.id, 1) },
+                        onDecrement = { homeViewModel.updateCart(product.id, -1) }
                     )
                 }
-            }
 
-            // Products Grid
-            items(uiState.products) { product ->
-                val quantity = homeUiState.cartItems[product.id] ?: 0
-                ProductCard(
-                    product = product,
-                    quantity = quantity,
-                    onIncrement = { homeViewModel.updateCart(product.id, 1) },
-                    onDecrement = { homeViewModel.updateCart(product.id, -1) }
-                )
-            }
-
-            // More Juices Coming Soon Card
-            item {
-                MoreJuicesSoonCard()
-            }
-
-            // Bottom Badges
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    InfoBadge(
-                        text = "10 Min Delivery",
-                        icon = Icons.Default.FlashOn,
-                        modifier = Modifier.weight(1f)
-                    )
-                    InfoBadge(
-                        text = "Freshly Picked",
-                        icon = Icons.Default.Verified,
-                        modifier = Modifier.weight(1f)
-                    )
+                // More Juices Coming Soon Card
+                item {
+                    MoreJuicesSoonCard()
                 }
-                Spacer(modifier = Modifier.height(32.dp))
+
+                // Bottom Badges
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        InfoBadge(
+                            text = "10 Min Delivery",
+                            icon = Icons.Default.FlashOn,
+                            modifier = Modifier.weight(1f)
+                        )
+                        InfoBadge(
+                            text = "Freshly Picked",
+                            icon = Icons.Default.Verified,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }

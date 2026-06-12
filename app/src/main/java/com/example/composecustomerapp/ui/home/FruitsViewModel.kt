@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class FruitsUiState(
@@ -11,39 +19,42 @@ data class FruitsUiState(
     val isLoading: Boolean = false
 )
 
-class FruitsViewModel : ViewModel() {
+class FruitsViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(FruitsUiState())
     val uiState: StateFlow<FruitsUiState> = _uiState.asStateFlow()
 
     init {
-        loadFruitsData()
+        fetchProducts()
     }
 
-    private fun loadFruitsData() {
-        _uiState.value = FruitsUiState(
-            products = listOf(
-                Product(
-                    id = "f1",
-                    name = "Apple",
-                    price = 45,
-                    imageUrl = "https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&q=80&w=400",
-                    unit = "1 kg"
-                ),
-                Product(
-                    id = "f2",
-                    name = "Banana",
-                    price = 35,
-                    imageUrl = "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80&w=400",
-                    unit = "12 pcs"
-                ),
-                Product(
-                    id = "f3",
-                    name = "Orange",
-                    price = 40,
-                    imageUrl = "https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&q=80&w=400",
-                    unit = "500 g"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val fruitsProducts = itemResponses
+                    .filter { it.subCategoryId == 9 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = fruitsProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                FruitsViewModel(application.itemRepository)
+            }
+        }
     }
 }

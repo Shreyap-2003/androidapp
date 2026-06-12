@@ -36,13 +36,14 @@ fun CartScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
-    onNavigateToOrders: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToOrders: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSuccessDialog by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     if (showSuccessDialog) {
+// ...
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
             confirmButton = {
@@ -118,8 +119,7 @@ fun CartScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = {},
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }
@@ -142,11 +142,17 @@ fun CartScreen(
                         CartItemRow(
                             product = product,
                             quantity = quantity,
+                            isLoading = uiState.isLoading,
                             onIncrement = { viewModel.updateCart(product.id, 1) },
                             onDecrement = { viewModel.updateCart(product.id, -1) },
                             onPlaceOrder = { 
-                                viewModel.removeItemFromCart(product.id)
-                                showSuccessDialog = true 
+                                viewModel.placeOrder(
+                                    productId = product.id,
+                                    onSuccess = { showSuccessDialog = true },
+                                    onError = { error -> 
+                                        android.widget.Toast.makeText(context, error, android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                )
                             }
                         )
                     }
@@ -164,6 +170,7 @@ fun CartScreen(
 fun CartItemRow(
     product: Product,
     quantity: Int,
+    isLoading: Boolean = false,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     onPlaceOrder: () -> Unit
@@ -227,6 +234,7 @@ fun CartItemRow(
             
             Button(
                 onClick = onPlaceOrder,
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp),
@@ -236,7 +244,11 @@ fun CartItemRow(
                     contentColor = Color.White
                 )
             ) {
-                Text("PLACE ORDER", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("PLACE ORDER", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                }
             }
         }
     }

@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class CakesUiState(
@@ -11,36 +19,42 @@ data class CakesUiState(
     val isLoading: Boolean = false
 )
 
-class CakesViewModel : ViewModel() {
+class CakesViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(CakesUiState())
     val uiState: StateFlow<CakesUiState> = _uiState.asStateFlow()
 
     init {
-        loadCakesData()
+        fetchProducts()
     }
 
-    private fun loadCakesData() {
-        _uiState.value = CakesUiState(
-            products = listOf(
-                Product(
-                    id = "ca1",
-                    name = "Sunfeast Mixed fruit Cake",
-                    price = 30,
-                    imageUrl = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    id = "ca2",
-                    name = "Britannia Treat Croissant with...",
-                    price = 20,
-                    imageUrl = "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    id = "ca3",
-                    name = "Lotte Choco Pie",
-                    price = 45,
-                    imageUrl = "https://images.unsplash.com/photo-1582236082449-34b8c9d1c1a5?auto=format&fit=crop&q=80&w=400"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val cakesProducts = itemResponses
+                    .filter { it.subCategoryId == 14 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = cakesProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                CakesViewModel(application.itemRepository)
+            }
+        }
     }
 }

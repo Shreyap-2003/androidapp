@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.CategoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.SubCategory
 
 data class InstantFoodsUiState(
@@ -11,33 +19,46 @@ data class InstantFoodsUiState(
     val isLoading: Boolean = false
 )
 
-class InstantFoodsViewModel : ViewModel() {
+class InstantFoodsViewModel(private val categoryRepository: CategoryRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(InstantFoodsUiState())
     val uiState: StateFlow<InstantFoodsUiState> = _uiState.asStateFlow()
 
     init {
-        loadInstantFoodsData()
+        fetchSubCategories()
     }
 
-    private fun loadInstantFoodsData() {
-        _uiState.value = InstantFoodsUiState(
-            subCategories = listOf(
-                SubCategory(
-                    "Noodles",
-                    "RAMEN \u2022 INSTANT \u2022 PASTA",
-                    "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&q=80&w=600"
-                ),
-                SubCategory(
-                    "Soups",
-                    "READY-TO-HEAT \u2022 HEALTHY",
-                    "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=600"
-                ),
-                SubCategory(
-                    "Frozen Foods",
-                    "QUICK MEALS \u2022 SNACKS",
-                    "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=600"
-                )
-            )
-        )
+    private fun fetchSubCategories() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = categoryRepository.getSubCategories()
+            result.onSuccess { subCategoryResponses ->
+                val instantFoodsSubCategories = subCategoryResponses
+                    .filter { it.categoryId == 18 }
+                    .map {
+                        val fullImageUrl = if (it.imageUrl.startsWith("http")) {
+                            it.imageUrl
+                        } else {
+                            "http://10.200.24.230:8080/${it.imageUrl}"
+                        }
+                        SubCategory(
+                            title = it.name,
+                            description = it.description,
+                            imageUrl = fullImageUrl
+                        )
+                    }
+                _uiState.update { it.copy(subCategories = instantFoodsSubCategories, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                InstantFoodsViewModel(application.categoryRepository)
+            }
+        }
     }
 }

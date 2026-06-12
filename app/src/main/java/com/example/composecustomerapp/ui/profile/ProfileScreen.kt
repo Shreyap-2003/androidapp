@@ -30,8 +30,8 @@ import com.example.composecustomerapp.ui.components.BlingBottomNavigation
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
+    viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
     onNavigateHome: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
     onNavigateToOrders: () -> Unit = {},
@@ -44,6 +44,7 @@ fun ProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
+        // ... dialog code ...
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = { Text(text = "Logout", fontWeight = FontWeight.Bold, color = Color.Black) },
@@ -83,71 +84,76 @@ fun ProfileScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF9FAFB)) // Very light gray background
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Profile Image Section with circular background
-            ProfileImageHeader(uiState.fullName, uiState.status)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Side-by-side Info Cards
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                InfoCard(
-                    label = "PHONE",
-                    value = uiState.phoneNumber,
-                    icon = Icons.Default.Phone,
-                    iconBg = Color(0xFFFEF3C7),
-                    iconTint = Color(0xFFB45309),
-                    modifier = Modifier.weight(1f)
-                )
-                InfoCard(
-                    label = "ROLE",
-                    value = uiState.role,
-                    icon = Icons.Default.Person,
-                    iconBg = Color(0xFFF3F4F6),
-                    iconTint = Color(0xFF6B7280),
-                    modifier = Modifier.weight(1f)
-                )
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.Black)
             }
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(Color(0xFFF9FAFB)) // Very light gray background
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Profile Image Section with circular background
+                ProfileImageHeader(uiState.fullName, uiState.status)
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Location Card
-            LocationCard(
-                location = uiState.location,
-                coordinates = uiState.coordinates
-            )
+                // Side-by-side Info Cards
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    InfoCard(
+                        label = "PHONE",
+                        value = uiState.phoneNumber,
+                        icon = Icons.Default.Phone,
+                        iconBg = Color(0xFFFEF3C7),
+                        iconTint = Color(0xFFB45309),
+                        modifier = Modifier.weight(1f)
+                    )
+                    InfoCard(
+                        label = "ROLE",
+                        value = uiState.role,
+                        icon = Icons.Default.Person,
+                        iconBg = Color(0xFFF3F4F6),
+                        iconTint = Color(0xFF6B7280),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Premium Member Card
-            PremiumCard(
-                type = uiState.membershipType,
-                since = uiState.membershipSince
-            )
+                // Location Card
+                LocationCard(
+                    location = uiState.location,
+                    coordinates = uiState.coordinates
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Logout Card
-            LogoutCard(onClick = { showLogoutDialog = true })
-            
-            Spacer(modifier = Modifier.height(32.dp))
+                // Premium Member Card
+                PremiumCard(
+                    type = uiState.membershipType,
+                    since = uiState.membershipSince
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Logout Card
+                LogoutCard(onClick = { showLogoutDialog = true })
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
     }
 }

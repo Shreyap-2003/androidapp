@@ -27,8 +27,8 @@ import com.example.composecustomerapp.ui.components.ProductCard
 
 @Composable
 fun FruitsScreen(
-    viewModel: FruitsViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
+    viewModel: FruitsViewModel = viewModel(factory = FruitsViewModel.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
     onNavigateToLogin: () -> Unit = {},
     onNavigateHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -58,65 +58,70 @@ fun FruitsScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }
     ) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Centered Title Header
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Fruits",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.Black
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.Black)
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(Color(0xFFF9FAFB)),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Centered Title Header
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(
                         modifier = Modifier
-                            .width(40.dp)
-                            .height(3.dp)
-                            .background(BlingYellow, RoundedCornerShape(2.dp))
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Fruits",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(40.dp)
+                                .height(3.dp)
+                                .background(BlingYellow, RoundedCornerShape(2.dp))
+                        )
+                    }
+                }
+
+                // Products Grid
+                items(uiState.products) { product ->
+                    val quantity = homeUiState.cartItems[product.id] ?: 0
+                    ProductCard(
+                        product = product,
+                        quantity = quantity,
+                        onIncrement = { homeViewModel.updateCart(product.id, 1) },
+                        onDecrement = { homeViewModel.updateCart(product.id, -1) }
                     )
                 }
-            }
 
-            // Products Grid
-            items(uiState.products) { product ->
-                val quantity = homeUiState.cartItems[product.id] ?: 0
-                ProductCard(
-                    product = product,
-                    quantity = quantity,
-                    onIncrement = { homeViewModel.updateCart(product.id, 1) },
-                    onDecrement = { homeViewModel.updateCart(product.id, -1) }
-                )
-            }
-
-            // Coming Soon Card
-            item {
-                ComingSoonCard()
-            }
-            
-            // Bottom Padding
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Spacer(modifier = Modifier.height(32.dp))
+                // Coming Soon Card
+                item {
+                    ComingSoonCard()
+                }
+                
+                // Bottom Padding
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }

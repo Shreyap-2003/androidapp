@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class CookiesUiState(
@@ -11,37 +19,42 @@ data class CookiesUiState(
     val isLoading: Boolean = false
 )
 
-class CookiesViewModel : ViewModel() {
+class CookiesViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(CookiesUiState())
     val uiState: StateFlow<CookiesUiState> = _uiState.asStateFlow()
 
     init {
-        loadCookiesData()
+        fetchProducts()
     }
 
-    private fun loadCookiesData() {
-        _uiState.value = CookiesUiState(
-            products = listOf(
-                Product(
-                    id = "c1",
-                    name = "Hide & Seek Chocochip Cookies",
-                    price = 30,
-                    imageUrl = "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=400",
-                    tag = "FASTEST"
-                ),
-                Product(
-                    id = "c2",
-                    name = "Sunfeast Dark Fantasy Choco fill...",
-                    price = 40,
-                    imageUrl = "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    id = "c3",
-                    name = "Unibic Fruit & Nut Cookies",
-                    price = 70,
-                    imageUrl = "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val cookiesProducts = itemResponses
+                    .filter { it.subCategoryId == 13 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = cookiesProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                CookiesViewModel(application.itemRepository)
+            }
+        }
     }
 }

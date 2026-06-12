@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class EnergyDrinksUiState(
@@ -11,36 +19,42 @@ data class EnergyDrinksUiState(
     val isLoading: Boolean = false
 )
 
-class EnergyDrinksViewModel : ViewModel() {
+class EnergyDrinksViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(EnergyDrinksUiState())
     val uiState: StateFlow<EnergyDrinksUiState> = _uiState.asStateFlow()
 
     init {
-        loadEnergyDrinksData()
+        fetchProducts()
     }
 
-    private fun loadEnergyDrinksData() {
-        _uiState.value = EnergyDrinksUiState(
-            products = listOf(
-                Product(
-                    id = "ed1",
-                    name = "Red Bull Energy...",
-                    price = 125,
-                    imageUrl = "https://images.unsplash.com/photo-1622543925917-763c34d1538c?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    id = "ed2",
-                    name = "Monster Energy...",
-                    price = 119,
-                    imageUrl = "https://images.unsplash.com/photo-1622543925917-763c34d1538c?auto=format&fit=crop&q=80&w=400" // Placeholder
-                ),
-                Product(
-                    id = "ed3",
-                    name = "Sting Energy Drink",
-                    price = 30,
-                    imageUrl = "https://images.unsplash.com/photo-1622543925917-763c34d1538c?auto=format&fit=crop&q=80&w=400" // Placeholder
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val energyDrinksProducts = itemResponses
+                    .filter { it.subCategoryId == 12 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = energyDrinksProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                EnergyDrinksViewModel(application.itemRepository)
+            }
+        }
     }
 }

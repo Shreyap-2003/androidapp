@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ComposeCustomerAppTheme {
                 val navController = rememberNavController()
-                val homeViewModel: HomeViewModel = viewModel()
+                val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
                 val ordersViewModel: OrdersViewModel = viewModel()
                 
                 NavHost(navController = navController, startDestination = "home") {
@@ -189,9 +189,6 @@ class MainActivity : ComponentActivity() {
                             onNavigateToSearch = {
                                 navController.navigate("search")
                             },
-                            onNavigateToProfile = {
-                                navController.navigate("profile")
-                            },
                             onNavigateToOrders = {
                                 navController.navigate("orders")
                             }
@@ -231,7 +228,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("dairy") {
-                        val dairyViewModel: DairyViewModel = viewModel()
+                        val dairyViewModel: DairyViewModel = viewModel(factory = DairyViewModel.Factory)
                         DairyProductScreen(
                             viewModel = dairyViewModel,
                             homeViewModel = homeViewModel,
@@ -258,7 +255,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("vegetables") {
-                        val vegetablesViewModel: VegetablesViewModel = viewModel()
+                        val vegetablesViewModel: VegetablesViewModel = viewModel(factory = VegetablesViewModel.Factory)
                         VegetablesScreen(
                             viewModel = vegetablesViewModel,
                             homeViewModel = homeViewModel,
@@ -285,7 +282,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("fruits") {
-                        val fruitsViewModel: FruitsViewModel = viewModel()
+                        val fruitsViewModel: FruitsViewModel = viewModel(factory = FruitsViewModel.Factory)
                         FruitsScreen(
                             viewModel = fruitsViewModel,
                             homeViewModel = homeViewModel,
@@ -344,7 +341,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("soft_drinks") {
-                        val softDrinksViewModel: SoftDrinksViewModel = viewModel()
+                        val softDrinksViewModel: SoftDrinksViewModel = viewModel(factory = SoftDrinksViewModel.Factory)
                         SoftDrinksScreen(
                             viewModel = softDrinksViewModel,
                             homeViewModel = homeViewModel,
@@ -371,7 +368,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("fruit_juices") {
-                        val fruitJuicesViewModel: FruitJuicesViewModel = viewModel()
+                        val fruitJuicesViewModel: FruitJuicesViewModel = viewModel(factory = FruitJuicesViewModel.Factory)
                         FruitJuicesScreen(
                             viewModel = fruitJuicesViewModel,
                             homeViewModel = homeViewModel,
@@ -398,7 +395,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("energy_drinks") {
-                        val energyDrinksViewModel: EnergyDrinksViewModel = viewModel()
+                        val energyDrinksViewModel: EnergyDrinksViewModel = viewModel(factory = EnergyDrinksViewModel.Factory)
                         EnergyDrinksScreen(
                             viewModel = energyDrinksViewModel,
                             homeViewModel = homeViewModel,
@@ -458,7 +455,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("cookies") {
-                        val cookiesViewModel: CookiesViewModel = viewModel()
+                        val cookiesViewModel: CookiesViewModel = viewModel(factory = CookiesViewModel.Factory)
                         CookiesScreen(
                             viewModel = cookiesViewModel,
                             homeViewModel = homeViewModel,
@@ -485,7 +482,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("cakes") {
-                        val cakesViewModel: CakesViewModel = viewModel()
+                        val cakesViewModel: CakesViewModel = viewModel(factory = CakesViewModel.Factory)
                         CakesScreen(
                             viewModel = cakesViewModel,
                             homeViewModel = homeViewModel,
@@ -512,7 +509,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("rusks_wafers") {
-                        val rusksWafersViewModel: RusksWafersViewModel = viewModel()
+                        val rusksWafersViewModel: RusksWafersViewModel = viewModel(factory = RusksWafersViewModel.Factory)
                         RusksWafersScreen(
                             viewModel = rusksWafersViewModel,
                             homeViewModel = homeViewModel,
@@ -572,7 +569,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("noodles") {
-                        val noodlesViewModel: NoodlesViewModel = viewModel()
+                        val noodlesViewModel: NoodlesViewModel = viewModel(factory = NoodlesViewModel.Factory)
                         NoodlesScreen(
                             viewModel = noodlesViewModel,
                             homeViewModel = homeViewModel,
@@ -599,7 +596,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("soups") {
-                        val soupsViewModel: SoupsViewModel = viewModel()
+                        val soupsViewModel: SoupsViewModel = viewModel(factory = SoupsViewModel.Factory)
                         SoupsScreen(
                             viewModel = soupsViewModel,
                             homeViewModel = homeViewModel,
@@ -626,7 +623,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("frozen_foods") {
-                        val frozenFoodsViewModel: FrozenFoodsViewModel = viewModel()
+                        val frozenFoodsViewModel: FrozenFoodsViewModel = viewModel(factory = FrozenFoodsViewModel.Factory)
                         FrozenFoodsScreen(
                             viewModel = frozenFoodsViewModel,
                             homeViewModel = homeViewModel,

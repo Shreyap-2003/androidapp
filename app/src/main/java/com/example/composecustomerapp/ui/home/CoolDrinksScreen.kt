@@ -23,8 +23,8 @@ import com.example.composecustomerapp.ui.components.SubCategoryCard
 
 @Composable
 fun CoolDrinksScreen(
-    viewModel: CoolDrinksViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
+    viewModel: CoolDrinksViewModel = viewModel(factory = CoolDrinksViewModel.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
     onNavigateToLogin: () -> Unit = {},
     onNavigateHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -54,50 +54,55 @@ fun CoolDrinksScreen(
                     cartItemCount = homeUiState.cartTotalItems,
                     onHomeClick = onNavigateHome,
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
-            contentPadding = PaddingValues(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Cool Drinks & Juices",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "Chilled & delivered in 10 minutes",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.Black)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(Color(0xFFF9FAFB)),
+                contentPadding = PaddingValues(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Cool Drinks & Juices",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = "Chilled & delivered in 10 minutes",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                    }
                 }
-            }
 
-            items(uiState.subCategories) { subCategory ->
-                SubCategoryCard(subCategory, onClick = { onSubCategoryClick(subCategory.title) })
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                items(uiState.subCategories) { subCategory ->
+                    SubCategoryCard(subCategory, onClick = { onSubCategoryClick(subCategory.title) })
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                EcoFriendlyCard()
-                Spacer(modifier = Modifier.height(32.dp))
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    EcoFriendlyCard()
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }

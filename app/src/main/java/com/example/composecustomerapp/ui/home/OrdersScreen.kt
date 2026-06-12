@@ -63,8 +63,7 @@ fun OrdersScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = homeUiState.cartTotalItems.let { onNavigateToCart },
-                    onOrdersClick = {},
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = {}
                 )
             }
         }
@@ -253,13 +252,17 @@ fun OrderCard(order: Order, isCompleted: Boolean, onClick: () -> Unit = {}) {
 @Composable
 fun StatusBadge(status: String) {
     val containerColor = when (status) {
-        "IN PROGRESS" -> Color(0xFFFFF9C4)
+        "IN_PROGRESS", "IN PROGRESS" -> Color(0xFFFFF9C4)
         "COMPLETED" -> Color(0xFFE6F4EA)
+        "FAILED" -> Color(0xFFFFEBEE)
+        "OPEN" -> Color(0xFFE3F2FD)
         else -> Color(0xFFE5E7EB)
     }
     val contentColor = when (status) {
-        "IN PROGRESS" -> Color(0xFF854D0E)
+        "IN_PROGRESS", "IN PROGRESS" -> Color(0xFF854D0E)
         "COMPLETED" -> Color(0xFF065F46)
+        "FAILED" -> Color(0xFFB71C1C)
+        "OPEN" -> Color(0xFF0D47A1)
         else -> Color.Black
     }
     

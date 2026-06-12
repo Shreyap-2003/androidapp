@@ -23,8 +23,8 @@ import com.example.composecustomerapp.ui.components.SubCategoryCard
 
 @Composable
 fun GroceryScreen(
-    viewModel: GroceryViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
+    viewModel: GroceryViewModel = viewModel(factory = GroceryViewModel.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
     onNavigateToLogin: () -> Unit = {},
     onNavigateHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -55,38 +55,43 @@ fun GroceryScreen(
                     onHomeClick = onNavigateHome,
                     onSearchClick = onNavigateToSearch,
                     onCartClick = onNavigateToCart,
-                    onOrdersClick = onNavigateToOrders,
-                    onProfileClick = onNavigateToProfile
+                    onOrdersClick = onNavigateToOrders
                 )
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Grocery",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.Black
-                    )
-                }
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.Black)
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(Color(0xFFF9FAFB)),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Grocery",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.Black
+                        )
+                    }
+                }
 
-            items(uiState.subCategories) { subCategory ->
-                SubCategoryCard(subCategory, onClick = { onSubCategoryClick(subCategory.title) })
-                Spacer(modifier = Modifier.height(16.dp))
+                items(uiState.subCategories) { subCategory ->
+                    SubCategoryCard(subCategory, onClick = { onSubCategoryClick(subCategory.title) })
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }

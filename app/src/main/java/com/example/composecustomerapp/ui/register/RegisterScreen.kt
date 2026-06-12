@@ -41,7 +41,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun RegisterScreen(
-    viewModel: RegisterViewModel = viewModel(),
+    viewModel: RegisterViewModel = viewModel(factory = RegisterViewModel.Factory),
     onNavigateBack: () -> Unit = {},
     onLogoClick: () -> Unit = {}
 ) {
@@ -52,7 +52,7 @@ fun RegisterScreen(
     LaunchedEffect(uiState.isRegistered) {
         if (uiState.isRegistered) {
             Toast.makeText(context, "Registered successfully!", Toast.LENGTH_LONG).show()
-            delay(4000)
+            delay(2000)
             viewModel.resetRegistrationState()
             onNavigateBack()
         }
@@ -176,10 +176,7 @@ fun RegisterScreen(
                         placeholder = "Min 5 characters",
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { focusManager.clearFocus() }
+                            imeAction = ImeAction.Next
                         ),
                         visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
@@ -191,6 +188,22 @@ fun RegisterScreen(
                                 )
                             }
                         }
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Address
+                    BlingLabel("ADDRESS")
+                    BlingTextField(
+                        value = uiState.address,
+                        onValueChange = viewModel::onAddressChanged,
+                        placeholder = "Full address",
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        )
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -215,11 +228,23 @@ fun RegisterScreen(
                         )
                     }
 
+                    if (uiState.error != null) {
+                        Text(
+                            text = uiState.error!!,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(32.dp))
 
                     // Create Account Button
                     Button(
-                        onClick = viewModel::createAccount,
+                        onClick = { 
+                            focusManager.clearFocus()
+                            viewModel.createAccount {} 
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -228,13 +253,17 @@ fun RegisterScreen(
                             containerColor = BlingYellow,
                             contentColor = Color.Black
                         ),
-                        enabled = uiState.canRegister
+                        enabled = uiState.canRegister && !uiState.isLoading
                     ) {
-                        Text(
-                            text = "Create account",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
+                        } else {
+                            Text(
+                                text = "Create account",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))

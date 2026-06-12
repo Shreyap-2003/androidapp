@@ -11,7 +11,7 @@ import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.205.35.230:8080/"
+    private const val BASE_URL = "http://10.200.24.230:8080/"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -19,6 +19,22 @@ object RetrofitClient {
     }
 
     fun createAuthApi(tokenManager: TokenManager): AuthApi {
+        return createRetrofit(tokenManager).create(AuthApi::class.java)
+    }
+
+    fun createCategoryApi(tokenManager: TokenManager): CategoryApi {
+        return createRetrofit(tokenManager).create(CategoryApi::class.java)
+    }
+
+    fun createItemApi(tokenManager: TokenManager): ItemApi {
+        return createRetrofit(tokenManager).create(ItemApi::class.java)
+    }
+
+    fun createOrderApi(tokenManager: TokenManager): OrderApi {
+        return createRetrofit(tokenManager).create(OrderApi::class.java)
+    }
+
+    private fun createRetrofit(tokenManager: TokenManager): Retrofit {
         val logging = HttpLoggingInterceptor { message: String ->
             android.util.Log.d("OkHttp", message)
         }.apply {
@@ -38,6 +54,5 @@ object RetrofitClient {
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(AuthApi::class.java)
     }
 }

@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class VegetablesUiState(
@@ -11,36 +19,42 @@ data class VegetablesUiState(
     val isLoading: Boolean = false
 )
 
-class VegetablesViewModel : ViewModel() {
+class VegetablesViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(VegetablesUiState())
     val uiState: StateFlow<VegetablesUiState> = _uiState.asStateFlow()
 
     init {
-        loadVegetablesData()
+        fetchProducts()
     }
 
-    private fun loadVegetablesData() {
-        _uiState.value = VegetablesUiState(
-            products = listOf(
-                Product(
-                    "v1",
-                    "Potato",
-                    25,
-                    "https://images.unsplash.com/photo-1518977676601-b53f02bad675?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    "v2",
-                    "Tomato",
-                    21,
-                    "https://images.unsplash.com/photo-1518977822534-7049a61ee0c2?auto=format&fit=crop&q=80&w=400"
-                ),
-                Product(
-                    "v3",
-                    "Carrot",
-                    28,
-                    "https://images.unsplash.com/photo-1444312645910-ffa973656eba?auto=format&fit=crop&q=80&w=400"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val vegetablesProducts = itemResponses
+                    .filter { it.subCategoryId == 8 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = vegetablesProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                VegetablesViewModel(application.itemRepository)
+            }
+        }
     }
 }

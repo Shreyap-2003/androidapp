@@ -1,10 +1,21 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.local.TokenManager
+import com.example.composecustomerapp.data.repository.CategoryRepository
+import com.example.composecustomerapp.data.repository.ItemRepository
+import com.example.composecustomerapp.data.repository.OrderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class Category(
     val title: String,
@@ -42,12 +53,89 @@ data class HomeUiState(
     val cartSubtotal: Int get() = cartProducts.sumOf { it.first.price * it.second }
 }
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val categoryRepository: CategoryRepository,
+    private val itemRepository: ItemRepository,
+    private val orderRepository: OrderRepository,
+    private val tokenManager: TokenManager
+) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
         loadHomeData()
+        fetchCategories()
+        fetchAllProducts()
+    }
+
+    private fun fetchAllProducts() {
+        viewModelScope.launch {
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val products = itemResponses.map {
+                    com.example.composecustomerapp.ui.components.Product(
+                        id = it.id.toString(),
+                        name = it.name,
+                        price = it.price.toInt(),
+                        imageUrl = it.imageUrl
+                    )
+                }
+                _uiState.update { it.copy(allProducts = products) }
+            }
+        }
+    }
+
+    fun placeOrder(productId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val userIdStr = tokenManager.userId.first()
+            if (userIdStr != null) {
+                val userId = userIdStr.toIntOrNull()
+                val itemId = productId.toIntOrNull()
+                
+                if (userId != null && itemId != null) {
+                    val result = orderRepository.placeOrder(userId, itemId)
+                    result.onSuccess {
+                        _uiState.update { it.copy(isLoading = false) }
+                        removeItemFromCart(productId)
+                        onSuccess()
+                    }.onFailure { e ->
+                        _uiState.update { it.copy(isLoading = false) }
+                        onError(e.message ?: "Failed to place order")
+                    }
+                } else {
+                    _uiState.update { it.copy(isLoading = false) }
+                    onError("Invalid user or product ID")
+                }
+            } else {
+                _uiState.update { it.copy(isLoading = false) }
+                onError("User not logged in")
+            }
+        }
+    }
+
+    private fun fetchCategories() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = categoryRepository.getCategories()
+            result.onSuccess { categoryResponses ->
+                val categories = categoryResponses.map {
+                    val fullImageUrl = if (it.imageUrl.startsWith("http")) {
+                        it.imageUrl
+                    } else {
+                        "http://10.200.24.230:8080/${it.imageUrl}"
+                    }
+                    Category(
+                        title = it.name,
+                        description = it.description,
+                        imageUrl = fullImageUrl
+                    )
+                }
+                _uiState.update { it.copy(categories = categories, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 
     private fun loadHomeData() {
@@ -105,35 +193,13 @@ class HomeViewModel : ViewModel() {
         _uiState.update { 
             it.copy(
                 allProducts = products,
-                categories = listOf(
-                    Category(
-                        "Grocery",
-                        "Daily Fresh Essentials",
-                        "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400"
-                    ),
-                    Category(
-                        "Cool Drinks & Juices",
-                        "Icy Cold Deliveries",
-                        "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=400"
-                    ),
-                    Category(
-                        "Bakery",
-                        "Fresh from the Oven",
-                        "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400"
-                    ),
-                    Category(
-                        "Instant Foods",
-                        "Quick Meal Solved",
-                        "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&q=80&w=400"
-                    )
-                ),
                 activeOrders = listOf(
                     Order(
                         "65",
                         "65",
                         "Hide & Seek Chocochip Cookies",
                         30,
-                        "IN PROGRESS",
+                        "IN_PROGRESS",
                         "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=200",
                         "June 8, 2026"
                     ),
@@ -142,7 +208,7 @@ class HomeViewModel : ViewModel() {
                         "66",
                         "Unibic Fruit & Nut Cookies",
                         70,
-                        "IN PROGRESS",
+                        "IN_PROGRESS",
                         "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=200",
                         "June 8, 2026"
                     )
@@ -174,6 +240,20 @@ class HomeViewModel : ViewModel() {
             val newCartItems = state.cartItems.toMutableMap()
             newCartItems.remove(productId)
             state.copy(cartItems = newCartItems)
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                HomeViewModel(
+                    application.categoryRepository, 
+                    application.itemRepository,
+                    application.orderRepository,
+                    application.tokenManager
+                )
+            }
         }
     }
 }

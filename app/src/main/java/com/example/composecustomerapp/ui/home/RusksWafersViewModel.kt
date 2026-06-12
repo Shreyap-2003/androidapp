@@ -1,9 +1,17 @@
 package com.example.composecustomerapp.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.composecustomerapp.MainApplication
+import com.example.composecustomerapp.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.composecustomerapp.ui.components.Product
 
 data class RusksWafersUiState(
@@ -11,39 +19,42 @@ data class RusksWafersUiState(
     val isLoading: Boolean = false
 )
 
-class RusksWafersViewModel : ViewModel() {
+class RusksWafersViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(RusksWafersUiState())
     val uiState: StateFlow<RusksWafersUiState> = _uiState.asStateFlow()
 
     init {
-        loadData()
+        fetchProducts()
     }
 
-    private fun loadData() {
-        _uiState.value = RusksWafersUiState(
-            products = listOf(
-                Product(
-                    id = "rw1",
-                    name = "Parle Real Elaichi Rusk",
-                    price = 54,
-                    imageUrl = "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80&w=400",
-                    unit = "400 g"
-                ),
-                Product(
-                    id = "rw2",
-                    name = "Britannia Strawberry Flavoured Wafers",
-                    price = 27,
-                    imageUrl = "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80&w=400", // Using a placeholder
-                    unit = "75 g"
-                ),
-                Product(
-                    id = "rw3",
-                    name = "Dukes Waffy Choco Wafer Roll",
-                    price = 58,
-                    imageUrl = "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80&w=400", // Using a placeholder
-                    unit = "250 g"
-                )
-            )
-        )
+    private fun fetchProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = itemRepository.getItems()
+            result.onSuccess { itemResponses ->
+                val rusksWafersProducts = itemResponses
+                    .filter { it.subCategoryId == 15 }
+                    .map {
+                        Product(
+                            id = it.id.toString(),
+                            name = it.name,
+                            price = it.price.toInt(),
+                            imageUrl = it.imageUrl
+                        )
+                    }
+                _uiState.update { it.copy(products = rusksWafersProducts, isLoading = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MainApplication)
+                RusksWafersViewModel(application.itemRepository)
+            }
+        }
     }
 }
