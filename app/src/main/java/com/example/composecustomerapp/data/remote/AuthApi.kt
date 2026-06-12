@@ -2,7 +2,6 @@ package com.example.composecustomerapp.data.remote
 
 import com.example.composecustomerapp.data.model.LoginRequest
 import com.example.composecustomerapp.data.model.LoginResponse
-import com.example.composecustomerapp.data.model.RegisterRequest
 import com.example.composecustomerapp.data.model.UserResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -14,9 +13,9 @@ interface AuthApi {
     @POST("application/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    @POST("api/users")
-    suspend fun register(@Body request: RegisterRequest): Response<UserResponse>
+    @GET("application/auth/user/{id}")
+    suspend fun getUser(@Path("id") id: Int): Response<UserResponse>
 
-    @GET("api/user/id/{id}")
-    suspend fun getUserProfile(@Path("id") id: String): Response<UserResponse>
+    @POST("application/auth/logout")
+    suspend fun logout(): Response<Unit>
 }

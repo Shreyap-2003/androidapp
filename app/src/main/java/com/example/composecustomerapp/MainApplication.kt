@@ -28,6 +28,6 @@ class MainApplication : Application() {
         itemRepository = ItemRepository(itemApi)
 
         val orderApi = RetrofitClient.createOrderApi(tokenManager)
-        orderRepository = OrderRepository(orderApi)
+        orderRepository = OrderRepository(orderApi, authApi)
     }
 }

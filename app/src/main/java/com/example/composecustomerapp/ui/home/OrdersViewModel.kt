@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.composecustomerapp.MainApplication
 import com.example.composecustomerapp.data.local.TokenManager
+import com.example.composecustomerapp.data.model.UserResponse
 import com.example.composecustomerapp.data.repository.ItemRepository
 import com.example.composecustomerapp.data.repository.OrderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,23 +57,26 @@ class OrdersViewModel(
 
             val ordersResult = orderRepository.getOrders()
             ordersResult.onSuccess { orderResponses ->
-                val orders = orderResponses
-                    .filter { it.customerId == userId }
-                    .map { resp ->
-                        val item = allItems.find { it.id == resp.itemId }
-                        
-                        var partnerName: String? = null
-                        var partnerPhone: String? = null
-                        
-                        // Requirement: if IN_PROGRESS, show as ASSIGNED and fetch partner details
-                        if (resp.orderStatus == "IN_PROGRESS" && resp.partnerId != null) {
-                            val partnerResult = orderRepository.getPartnerDetails(resp.partnerId)
-                            partnerResult.onSuccess { partner ->
-                                partnerName = partner?.name
-                                partnerPhone = partner?.phoneNumber
-                            }
+                val orders = mutableListOf<Order>()
+                
+                for (resp in orderResponses) {
+                    if (resp.customerId != userId) continue
+                    
+                    val item = allItems.find { it.id == resp.itemId }
+                    
+                    var partnerName: String? = null
+                    var partnerPhone: String? = null
+                    
+                    // Requirement: if IN_PROGRESS, show as ASSIGNED and fetch partner details
+                    if (resp.orderStatus == "IN_PROGRESS" && resp.partnerId != null) {
+                        val partnerResult = orderRepository.getPartnerDetails(resp.partnerId)
+                        partnerResult.onSuccess { partner: UserResponse? ->
+                            partnerName = partner?.name
+                            partnerPhone = partner?.phoneNumber
                         }
+                    }
 
+                    orders.add(
                         Order(
                             id = resp.id.toString(),
                             orderNumber = resp.id.toString(),
@@ -84,7 +88,8 @@ class OrdersViewModel(
                             partnerName = partnerName,
                             partnerPhone = partnerPhone
                         )
-                    }
+                    )
+                }
                 
                 _uiState.update { 
                     it.copy(

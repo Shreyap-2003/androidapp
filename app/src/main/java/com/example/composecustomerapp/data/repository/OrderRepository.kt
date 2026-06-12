@@ -2,6 +2,7 @@ package com.example.composecustomerapp.data.repository
 
 import com.example.composecustomerapp.data.model.OrderRequest
 import com.example.composecustomerapp.data.model.OrderResponse
+import com.example.composecustomerapp.data.model.UserResponse
 import com.example.composecustomerapp.data.remote.OrderApi
 import com.example.composecustomerapp.data.remote.AuthApi
 
@@ -35,14 +36,16 @@ class OrderRepository(
         }
     }
 
-    suspend fun getPartnerDetails(partnerId: Int) = try {
-        val response = authApi.getUser(partnerId)
-        if (response.isSuccessful) {
-            Result.success(response.body())
-        } else {
-            Result.failure(Exception("Error fetching partner: ${response.code()}"))
+    suspend fun getPartnerDetails(partnerId: Int): Result<UserResponse?> {
+        return try {
+            val response = authApi.getUser(partnerId)
+            if (response.isSuccessful) {
+                Result.success(response.body())
+            } else {
+                Result.failure(Exception("Error fetching partner: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-    } catch (e: Exception) {
-        Result.failure(e)
     }
 }

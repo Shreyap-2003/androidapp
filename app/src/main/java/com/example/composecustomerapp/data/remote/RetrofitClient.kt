@@ -18,22 +18,6 @@ object RetrofitClient {
         coerceInputValues = true
     }
 
-    fun createAuthApi(tokenManager: TokenManager): AuthApi {
-        return createRetrofit(tokenManager).create(AuthApi::class.java)
-    }
-
-    fun createCategoryApi(tokenManager: TokenManager): CategoryApi {
-        return createRetrofit(tokenManager).create(CategoryApi::class.java)
-    }
-
-    fun createItemApi(tokenManager: TokenManager): ItemApi {
-        return createRetrofit(tokenManager).create(ItemApi::class.java)
-    }
-
-    fun createOrderApi(tokenManager: TokenManager): OrderApi {
-        return createRetrofit(tokenManager).create(OrderApi::class.java)
-    }
-
     private fun createRetrofit(tokenManager: TokenManager): Retrofit {
         val logging = HttpLoggingInterceptor { message: String ->
             android.util.Log.d("OkHttp", message)
@@ -54,5 +38,17 @@ object RetrofitClient {
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
+    }
+
+    fun createAuthApi(tokenManager: TokenManager): AuthApi {
+        return createRetrofit(tokenManager).create(AuthApi::class.java)
+    }
+
+    fun createOrderApi(tokenManager: TokenManager): OrderApi {
+        return createRetrofit(tokenManager).create(OrderApi::class.java)
+    }
+
+    fun createItemApi(tokenManager: TokenManager): ItemApi {
+        return createRetrofit(tokenManager).create(ItemApi::class.java)
     }
 }

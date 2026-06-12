@@ -112,7 +112,8 @@ fun BlingBottomNavigation(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit = {},
     onCartClick: () -> Unit,
-    onOrdersClick: () -> Unit
+    onOrdersClick: () -> Unit,
+    onProfileClick: () -> Unit = {}
 ) {
     NavigationBar(
         containerColor = Color.White,
@@ -162,6 +163,8 @@ fun BlingBottomNavigation(
                 indicatorColor = BlingYellow
             )
         )
+
+        BottomNavItem("Profile", Icons.Default.Person, currentRoute == "profile", onProfileClick)
     }
 }
 
