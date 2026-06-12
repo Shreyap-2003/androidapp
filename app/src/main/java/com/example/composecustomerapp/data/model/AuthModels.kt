@@ -16,3 +16,11 @@ data class LoginResponse(
     val message: String? = null,
     val userType: String? = null
 )
+
+@Serializable
+data class UserResponse(
+    val id: Int? = null,
+    val name: String? = null,
+    val phoneNumber: String? = null,
+    val userType: String? = null
+)

@@ -60,8 +60,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             ComposeCustomerAppTheme {
                 val navController = rememberNavController()
-                val homeViewModel: HomeViewModel = viewModel()
-                val ordersViewModel: OrdersViewModel = viewModel()
+                val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
+                val ordersViewModel: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
                 
                 NavHost(navController = navController, startDestination = "home") {
                     composable("home") {

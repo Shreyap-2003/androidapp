@@ -30,8 +30,8 @@ import com.example.composecustomerapp.ui.components.BlingBottomNavigation
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
+    viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
     onNavigateHome: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
     onNavigateToOrders: () -> Unit = {},

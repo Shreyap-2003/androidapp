@@ -3,6 +3,7 @@ package com.example.composecustomerapp.data.repository
 import com.example.composecustomerapp.data.local.TokenManager
 import com.example.composecustomerapp.data.model.LoginRequest
 import com.example.composecustomerapp.data.model.LoginResponse
+import com.example.composecustomerapp.data.model.UserResponse
 import com.example.composecustomerapp.data.remote.AuthApi
 
 class AuthRepository(
@@ -25,6 +26,9 @@ class AuthRepository(
                     } else {
                         println("AuthDebug: No x-auth or Authorization token in headers")
                     }
+                    body.customerId?.let {
+                        tokenManager.saveUserId(it.toString())
+                    }
                     Result.success(body)
                 } else {
                     println("AuthDebug: Body null or status not SUCCESS")
@@ -40,7 +44,31 @@ class AuthRepository(
         }
     }
 
-    suspend fun logout() {
-        tokenManager.clearAuthToken()
+    suspend fun getUser(id: Int): Result<UserResponse> {
+        return try {
+            val response = authApi.getUser(id)
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: UserResponse())
+            } else {
+                Result.failure(Exception("Error fetching user: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun logout(): Result<Unit> {
+        return try {
+            val response = authApi.logout()
+            tokenManager.clearAuthToken()
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Logout failed on server: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            tokenManager.clearAuthToken() // Clear locally even if API fails
+            Result.failure(e)
+        }
     }
 }
